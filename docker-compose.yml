@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+
+  ipfs:
+    container_name: ipfs-${PT}
+    image: ipfs/kubo:latest
+    ports:
+     - "4001:4001" # ipfs swarm - expose if needed/wanted
+     - "5001:5001" # ipfs api - expose if needed/wanted
+     - "8080:8080" # ipfs gateway - expose if needed/wanted
+    volumes:
+      - ./ipfs:/data/ipfs
+      - ./bootstrap.sh:/container-init.d/bootstrap.sh
+    restart: always
+
+  cluster-ipfs:
+    container_name: cluster-${PT}
+    image: ipfs/ipfs-cluster:latest
+    depends_on:
+      - ipfs
+    environment:
+      CLUSTER_PEERNAME: cluster-${PT}
+      CLUSTER_IPFSHTTP_NODEMULTIADDRESS: /dns4/ipfs-$PT/tcp/5001
+      CLUSTER_CRDT_TRUSTEDPEERS: '*'
+      CLUSTER_RESTAPI_HTTPLISTENMULTIADDRESS: /ip4/0.0.0.0/tcp/9094
+      #CLUSTER_RESTAPI_BASICAUTHCREDENTIALS: ${USER}
+      CLUSTER_MONITORPINGINTERVAL: 2s
+    ports:
+      - "9094:9094"
+      - "9095:9095"
+      - "9096:9096"
+    volumes:
+      - ./cluster:/data/ipfs-cluster
+      - ./recover.sh:/container-init.d/recover.sh
+    restart: always
